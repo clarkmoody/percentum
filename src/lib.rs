@@ -479,6 +479,33 @@ pub mod serde_fraction_maybe {
     }
 }
 
+#[cfg(feature = "bincode")]
+impl<T> bincode::Encode for Percentage<T>
+where
+    T: bincode::Encode + Number,
+{
+    fn encode<E: bincode::enc::Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), bincode::error::EncodeError> {
+        let inner = self.to_points();
+        bincode::Encode::encode(&inner, encoder)?;
+        Ok(())
+    }
+}
+
+#[cfg(feature = "bincode")]
+impl<T, C> bincode::Decode<C> for Percentage<T>
+where
+    T: bincode::Decode<C> + Number,
+{
+    fn decode<D: bincode::de::Decoder<Context = C>>(
+        decoder: &mut D,
+    ) -> Result<Self, bincode::error::DecodeError> {
+        Ok(Self::from_points(bincode::Decode::decode(decoder)?))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -733,5 +760,20 @@ mod tests {
         assert_eq!(de.points, de.fraction);
         assert!(de.op_points.is_none());
         assert!(de.op_fraction.is_none());
+    }
+
+    #[cfg(feature = "bincode")]
+    #[test]
+    fn bincode() {
+        let config = bincode::config::standard();
+
+        let mut buf = [0_u8; 16];
+        let p = Percentage::from_fraction(0.123456789_f64);
+
+        bincode::encode_into_slice(p, &mut buf, config).expect("encode");
+
+        let (de, _) = bincode::decode_from_slice(&buf, config).expect("decode");
+
+        assert_eq!(p, de);
     }
 }
