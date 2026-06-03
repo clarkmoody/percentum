@@ -58,6 +58,14 @@ where
         Self::Points(Points(points))
     }
 
+    /// Construct a [`Percentage`] from a value in
+    /// [basis points](https://en.wikipedia.org/wiki/Basis_point).
+    ///
+    /// One basis point equals 0.01 percentage points, or 0.0001 as a fraction.
+    pub fn from_basis_points(bp: T) -> Self {
+        Self::from_points(bp / T::one_hundred())
+    }
+
     /// Obtain the fractional representation of the [`Percentage`]
     pub fn to_fraction(self) -> T {
         match self {
@@ -72,6 +80,14 @@ where
             Self::Fraction(fraction) => Points::from(fraction).into_inner(),
             Self::Points(points) => points.into_inner(),
         }
+    }
+
+    /// Obtain the value in
+    /// [basis points](https://en.wikipedia.org/wiki/Basis_point).
+    ///
+    /// One basis point equals 0.01 percentage points.
+    pub fn to_basis_points(self) -> T {
+        self.to_points() * T::one_hundred()
     }
 
     /// Mutate the inner value as a fraction
@@ -617,6 +633,16 @@ mod tests {
         let b = Percentage::from_fraction(0.75);
 
         assert_eq!(a, b);
+    }
+
+    #[test]
+    fn basis_points() {
+        let a = Percentage::from_points(7.5);
+        let b = Percentage::from_basis_points(750.0);
+
+        assert_eq!(a, b);
+
+        assert_eq!(a.to_basis_points(), 750.0);
     }
 
     #[cfg(feature = "decimal")]
