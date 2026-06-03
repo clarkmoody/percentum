@@ -14,6 +14,9 @@ pub trait Number:
     /// Does the value equate to zero?
     fn is_zero(&self) -> bool;
 
+    /// The additive identity
+    fn zero() -> Self;
+
     /// The percentage scale factor that converts between fraction and points
     fn one_hundred() -> Self;
 }
@@ -40,6 +43,11 @@ impl<T> Percentage<T>
 where
     T: Number,
 {
+    /// Construct zero percent
+    pub fn zero() -> Self {
+        Self::from_points(T::zero())
+    }
+
     /// Construct a [`Percentage`] from a fractional value
     pub const fn from_fraction(fraction: T) -> Self {
         Self::Fraction(Fraction(fraction))
@@ -122,6 +130,15 @@ where
     }
 }
 
+impl<T> Default for Percentage<T>
+where
+    T: Number,
+{
+    fn default() -> Self {
+        Self::zero()
+    }
+}
+
 impl<T> PartialEq for Percentage<T>
 where
     T: Number,
@@ -187,6 +204,10 @@ impl Number for f32 {
         *self == 0.0
     }
 
+    fn zero() -> Self {
+        0.0
+    }
+
     fn one_hundred() -> Self {
         100.0
     }
@@ -195,6 +216,10 @@ impl Number for f32 {
 impl Number for f64 {
     fn is_zero(&self) -> bool {
         *self == 0.0
+    }
+
+    fn zero() -> Self {
+        0.0
     }
 
     fn one_hundred() -> Self {
@@ -206,6 +231,10 @@ impl Number for f64 {
 impl Number for rust_decimal::Decimal {
     fn is_zero(&self) -> bool {
         rust_decimal::Decimal::is_zero(self)
+    }
+
+    fn zero() -> Self {
+        rust_decimal::Decimal::ZERO
     }
 
     fn one_hundred() -> Self {
