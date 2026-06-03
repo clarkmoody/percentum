@@ -506,6 +506,18 @@ where
     }
 }
 
+#[cfg(feature = "bincode")]
+impl<'de, T, C> bincode::BorrowDecode<'de, C> for Percentage<T>
+where
+    T: bincode::Decode<C> + Number,
+{
+    fn borrow_decode<D: bincode::de::BorrowDecoder<'de, Context = C>>(
+        decoder: &mut D,
+    ) -> Result<Self, bincode::error::DecodeError> {
+        Ok(Self::from_points(bincode::Decode::decode(decoder)?))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
