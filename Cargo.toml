@@ -1,6 +1,6 @@
 [package]
 name = "percentum"
-version = "0.0.6"
+version = "0.0.7"
 authors = ["Clark Moody <clark@clarkmoody.com>"]
 edition = "2024"
 description = "Percentage type sanity"
