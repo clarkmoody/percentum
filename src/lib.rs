@@ -242,6 +242,31 @@ impl Number for rust_decimal::Decimal {
     }
 }
 
+impl Percentage<f32> {
+    /// Zero percent
+    pub const ZERO: Self = Self::Points(Points(0.0));
+
+    /// One hundred percent
+    pub const ONE_HUNDRED: Self = Self::Points(Points(100.0));
+}
+
+impl Percentage<f64> {
+    /// Zero percent
+    pub const ZERO: Self = Self::Points(Points(0.0));
+
+    /// One hundred percent
+    pub const ONE_HUNDRED: Self = Self::Points(Points(100.0));
+}
+
+#[cfg(feature = "decimal")]
+impl Percentage<rust_decimal::Decimal> {
+    /// Zero percent
+    pub const ZERO: Self = Self::Points(Points(rust_decimal::Decimal::ZERO));
+
+    /// One hundred percent
+    pub const ONE_HUNDRED: Self = Self::Points(Points(rust_decimal::Decimal::ONE_HUNDRED));
+}
+
 impl<T> Add for Fraction<T>
 where
     T: Number,
