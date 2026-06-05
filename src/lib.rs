@@ -48,6 +48,11 @@ where
         Self::from_points(T::zero())
     }
 
+    /// Construct one hundred percent
+    pub fn one_hundred() -> Self {
+        Self::from_points(T::one_hundred())
+    }
+
     /// Construct a [`Percentage`] from a fractional value
     pub const fn from_fraction(fraction: T) -> Self {
         Self::Fraction(Fraction(fraction))
@@ -143,6 +148,16 @@ where
     /// Compute the percentage of the `whole` represented by the `part`
     pub fn part_of_the_whole(part: T, whole: T) -> Option<Self> {
         (!whole.is_zero()).then(|| Self::Fraction(Fraction(part / whole)))
+    }
+
+    /// Solve for the initial value, given the final value. This percentage is
+    /// the adjustment factor.
+    pub fn solve_initial(self, final_value: T) -> Option<T> {
+        // final = initial * (1 + fraction)
+
+        let denom = (self + Self::one_hundred()).to_fraction();
+
+        (!denom.is_zero()).then(|| final_value / denom)
     }
 }
 
@@ -803,6 +818,27 @@ mod tests {
             let part_of_the_whole = Percentage::part_of_the_whole(part, whole).unwrap();
             assert_eq!(part_of_the_whole.to_points(), points);
         }
+    }
+
+    #[test]
+    fn solve_initial() {
+        // Final, Initial, Gain/Loss Points
+        let cases = [
+            (125.0, 100.0, 25.0),
+            (100.0, 125.0, -20.0),
+            (75.0, 60.0, 25.0),
+            (-30.0, 60.0, -150.0),
+        ];
+
+        for (final_value, initial_value, gain_points) in cases {
+            let solved_initial = Percentage::from_points(gain_points)
+                .solve_initial(final_value)
+                .unwrap();
+            assert_eq!(solved_initial, initial_value);
+        }
+
+        // Unsolvable
+        assert!(Percentage::from_points(-100.0).solve_initial(1.0).is_none())
     }
 
     #[test]
