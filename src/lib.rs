@@ -231,6 +231,18 @@ where
     }
 }
 
+impl<T> Eq for Percentage<T> where T: Number + Eq {}
+
+impl<T> core::hash::Hash for Percentage<T>
+where
+    T: Number + core::hash::Hash,
+{
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        // Always hash as points for consistency with PartialEq
+        self.to_points().hash(state);
+    }
+}
+
 impl<T> From<Fraction<T>> for Points<T>
 where
     T: Number,
@@ -261,6 +273,14 @@ impl<T> Fraction<T> {
     }
 }
 
+impl<T: Eq> Eq for Fraction<T> {}
+
+impl<T: core::hash::Hash> core::hash::Hash for Fraction<T> {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        self.0.hash(state);
+    }
+}
+
 impl<T> Points<T> {
     /// Obtain the inner points value
     pub fn into_inner(self) -> T {
@@ -270,6 +290,14 @@ impl<T> Points<T> {
     /// Mutate the inner points value
     pub fn mut_inner(&mut self) -> &mut T {
         &mut self.0
+    }
+}
+
+impl<T: Eq> Eq for Points<T> {}
+
+impl<T: core::hash::Hash> core::hash::Hash for Points<T> {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        self.0.hash(state);
     }
 }
 
