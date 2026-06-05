@@ -1,4 +1,4 @@
-use std::ops::{Add, Div, Mul, Sub};
+use core::ops::{Add, Div, Mul, Sub};
 
 /// A number that can be used as a [`Percentage`] value
 pub trait Number:
@@ -46,6 +46,11 @@ where
     /// Construct zero percent
     pub fn zero() -> Self {
         Self::from_points(T::zero())
+    }
+
+    /// Check if this is 0%
+    pub fn is_zero(self) -> bool {
+        self.to_fraction().is_zero()
     }
 
     /// Construct one hundred percent
@@ -176,6 +181,27 @@ where
     pub fn lerp(self, a: T, b: T) -> T {
         a + self.to_fraction() * (b - a)
     }
+
+    /// Clamp this percentage to the range `[min, max]`.
+    pub fn clamp(self, min: Self, max: Self) -> Self {
+        if let Some(core::cmp::Ordering::Less) = self.partial_cmp(&min) {
+            min
+        } else if let Some(core::cmp::Ordering::Greater) = self.partial_cmp(&max) {
+            max
+        } else {
+            self
+        }
+    }
+
+    /// Return the smaller of `self` and `other`.
+    pub fn min(self, other: Self) -> Self {
+        if other < self { other } else { self }
+    }
+
+    /// Return the larger of `self` and `other`.
+    pub fn max(self, other: Self) -> Self {
+        if other > self { other } else { self }
+    }
 }
 
 impl<T> Default for Percentage<T>
@@ -200,7 +226,7 @@ impl<T> PartialOrd for Percentage<T>
 where
     T: Number,
 {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
         self.to_points().partial_cmp(&other.to_points())
     }
 }
