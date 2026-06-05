@@ -170,6 +170,12 @@ where
     pub fn complement_unchecked(self) -> Self {
         Self::from_points(T::one_hundred() - self.to_points())
     }
+
+    /// Linear interpolation from `a` at 0% to `b` at 100%. Extrapolates outside
+    /// the 0-100% range.
+    pub fn lerp(self, a: T, b: T) -> T {
+        a + self.to_fraction() * (b - a)
+    }
 }
 
 impl<T> Default for Percentage<T>
@@ -884,6 +890,24 @@ mod tests {
                 pct.complement_unchecked(),
                 Percentage::from_points(complement)
             );
+        }
+    }
+
+    #[test]
+    fn linear_interpolation() {
+        // Start, End, Percent, Result
+        let cases = [
+            (0.0, 100.0, 25.0, 25.0),
+            (20.0, 80.0, 75.0, 65.0),
+            (20.0, 80.0, -20.0, 8.0),
+            (100.0, 200.0, 100.0, 200.0),
+            (100.0, 200.0, 50.0, 150.0),
+            (3.0, 4.0, -100.0, 2.0),
+        ];
+
+        for (a, b, points, result) in cases {
+            let pct = Percentage::from_points(points);
+            assert_eq!(pct.lerp(a, b), result);
         }
     }
 
