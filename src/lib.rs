@@ -59,11 +59,25 @@ where
     }
 
     /// Construct a [`Percentage`] from a fractional value
+    ///
+    /// ```
+    /// use percentum::Percentage;
+    ///
+    /// let pct = Percentage::from_fraction(0.75_f64);
+    /// assert_eq!(pct.to_points(), 75.0);
+    /// ```
     pub const fn from_fraction(fraction: T) -> Self {
         Self::Fraction(Fraction(fraction))
     }
 
     /// Construct a [`Percentage`] from a percentage points value
+    ///
+    /// ```
+    /// use percentum::Percentage;
+    ///
+    /// let pct = Percentage::from_points(75.0_f64);
+    /// assert_eq!(pct.to_fraction(), 0.75);
+    /// ```
     pub const fn from_points(points: T) -> Self {
         Self::Points(Points(points))
     }
@@ -72,11 +86,25 @@ where
     /// [basis points](https://en.wikipedia.org/wiki/Basis_point).
     ///
     /// One basis point equals 0.01 percentage points, or 0.0001 as a fraction.
+    ///
+    /// ```
+    /// use percentum::Percentage;
+    ///
+    /// let pct = Percentage::from_basis_points(150.0_f64);
+    /// assert_eq!(pct.to_points(), 1.5);
+    /// ```
     pub fn from_basis_points(bp: T) -> Self {
         Self::from_points(bp / T::one_hundred())
     }
 
     /// Obtain the fractional representation of the [`Percentage`]
+    ///
+    /// ```
+    /// use percentum::Percentage;
+    ///
+    /// let pct = Percentage::from_points(75.0_f64);
+    /// assert_eq!(pct.to_fraction(), 0.75);
+    /// ```
     pub fn to_fraction(self) -> T {
         match self {
             Self::Fraction(fraction) => fraction.into_inner(),
@@ -85,6 +113,13 @@ where
     }
 
     /// Obtain the points representation of the [`Percentage`]
+    ///
+    /// ```
+    /// use percentum::Percentage;
+    ///
+    /// let pct = Percentage::from_fraction(0.75_f64);
+    /// assert_eq!(pct.to_points(), 75.0);
+    /// ```
     pub fn to_points(self) -> T {
         match self {
             Self::Fraction(fraction) => Points::from(fraction).into_inner(),
@@ -96,12 +131,32 @@ where
     /// [basis points](https://en.wikipedia.org/wiki/Basis_point).
     ///
     /// One basis point equals 0.01 percentage points.
+    ///
+    /// ```
+    /// use percentum::Percentage;
+    ///
+    /// let pct = Percentage::from_points(1.5_f64);
+    /// assert_eq!(pct.to_basis_points(), 150.0);
+    /// ```
     pub fn to_basis_points(self) -> T {
         self.to_points() * T::one_hundred()
     }
 
-    /// Mutate the inner value as a fraction
-    pub fn to_fraction_mut(&mut self) -> &mut T {
+    /// Return a mutable reference to the inner value, converting to the
+    /// fractional representation first if necessary.
+    ///
+    /// If the `Percentage` is currently stored as [`Points`], it will be
+    /// converted in place to [`Fraction`] before returning the reference.
+    ///
+    /// ```
+    /// use percentum::Percentage;
+    ///
+    /// let mut pct = Percentage::from_points(125.75_f64);
+    /// let inner = pct.as_fraction_mut();
+    /// *inner = inner.round();
+    /// assert_eq!(pct, Percentage::from_points(100.0));
+    /// ```
+    pub fn as_fraction_mut(&mut self) -> &mut T {
         match self {
             Self::Fraction(fraction) => fraction.mut_inner(),
             Self::Points(points) => {
@@ -114,8 +169,21 @@ where
         }
     }
 
-    /// Mutate the inner value as points
-    pub fn to_points_mut(&mut self) -> &mut T {
+    /// Return a mutable reference to the inner value, converting to the
+    /// points representation first if necessary.
+    ///
+    /// If the `Percentage` is currently stored as [`Fraction`], it will be
+    /// converted in place to [`Points`] before returning the reference.
+    ///
+    /// ```
+    /// use percentum::Percentage;
+    ///
+    /// let mut pct = Percentage::from_fraction(1.2575_f64);
+    /// let inner = pct.as_points_mut();
+    /// *inner = inner.round();
+    /// assert_eq!(pct, Percentage::from_points(126.0));
+    /// ```
+    pub fn as_points_mut(&mut self) -> &mut T {
         match self {
             Self::Fraction(fraction) => {
                 *self = Self::Points(Points::from(*fraction));
@@ -128,61 +196,167 @@ where
         }
     }
 
-    /// In-place update the inner value as a fraction
+    /// In-place update of the inner value interpreted as a fraction.
+    ///
+    /// The closure receives the current fractional value and must return
+    /// the new fractional value.
+    ///
+    /// ```
+    /// use percentum::Percentage;
+    ///
+    /// let mut pct = Percentage::from_fraction(1.2575_f64);
+    /// pct.update_fraction(f64::floor);
+    /// assert_eq!(pct, Percentage::from_points(100.0));
+    /// ```
     pub fn update_fraction(&mut self, f: impl FnOnce(T) -> T) {
         *self = Self::from_fraction(f(self.to_fraction()));
     }
 
-    /// In-place update the inner value as points
+    /// In-place update of the inner value interpreted as percentage points.
+    ///
+    /// The closure receives the current points value and must return
+    /// the new points value.
+    ///
+    /// ```
+    /// use percentum::Percentage;
+    ///
+    /// let mut pct = Percentage::from_points(125.75_f64);
+    /// pct.update_points(f64::ceil);
+    /// assert_eq!(pct, Percentage::from_points(126.0));
+    /// ```
     pub fn update_points(&mut self, f: impl FnOnce(T) -> T) {
         *self = Self::from_points(f(self.to_points()));
     }
 
     /// Compute the quantity that represents the percentage of `other`
+    ///
+    /// Equivalent to `other * fraction`
+    ///
+    /// ```
+    /// use percentum::Percentage;
+    ///
+    /// let pct = Percentage::from_points(25.0_f32);
+    /// assert_eq!(pct.apply_to(80.0), 20.0);
+    /// ```
     pub fn apply_to(self, other: T) -> T {
         self.to_fraction() * other
     }
 
     /// Compute the percentage gained or lost between the initial and final
     /// value.
+    ///
+    /// Returns [`None`] if `initial_value` is zero (division by zero).
+    ///
+    /// ```
+    /// use percentum::Percentage;
+    ///
+    /// let gl = Percentage::gain_loss(125.0_f64, 100.0).unwrap();
+    /// assert_eq!(gl.to_points(), 25.0);
+    ///
+    /// let gl = Percentage::gain_loss(75.0_f64, 100.0).unwrap();
+    /// assert_eq!(gl.to_points(), -25.0);
+    /// ```
     pub fn gain_loss(final_value: T, initial_value: T) -> Option<Self> {
         (!initial_value.is_zero())
             .then(|| Percentage::from_fraction((final_value - initial_value) / initial_value))
     }
 
     /// Compute the percentage of the `whole` represented by the `part`
+    ///
+    /// Returns [`None`] if `whole` is zero (division by zero).
+    ///
+    /// ```
+    /// use percentum::Percentage;
+    ///
+    /// let pct = Percentage::part_of_the_whole(20.0_f64, 80.0).unwrap();
+    /// assert_eq!(pct.to_points(), 25.0);
+    /// ```
     pub fn part_of_the_whole(part: T, whole: T) -> Option<Self> {
         (!whole.is_zero()).then(|| Self::Fraction(Fraction(part / whole)))
     }
 
     /// Solve for the initial value, given the final value. This percentage is
     /// the adjustment factor.
+    ///
+    /// Returns [`None`] if `self` is -100%.
+    ///
+    /// final = initial * (1 + fraction)
+    ///
+    /// ```
+    /// use percentum::Percentage;
+    ///
+    /// let pct = Percentage::from_points(-25.0_f64);
+    /// assert_eq!(pct.solve_initial(60.0), Some(80.0));
+    /// ```
     pub fn solve_initial(self, final_value: T) -> Option<T> {
-        // final = initial * (1 + fraction)
-
         let denom = (self + Self::one_hundred()).to_fraction();
 
         (!denom.is_zero()).then(|| final_value / denom)
     }
 
     /// Amount needed to sum to 100%, checked for range
+    ///
+    /// Returns [`None`] if `self` is not between 0-100%.
+    ///
+    /// ```
+    /// use percentum::Percentage;
+    ///
+    /// let pct = Percentage::from_points(25.0_f64);
+    /// assert_eq!(pct.complement(), Some(Percentage::from_points(75.0)));
+    /// ```
     pub fn complement(self) -> Option<Self> {
         let p = self.to_points();
         (p >= T::zero() && p <= T::one_hundred()).then(|| Self::from_points(T::one_hundred() - p))
     }
 
     /// Amount needed to sum to 100%, unchecked for range
+    ///
+    /// ```
+    /// use percentum::Percentage;
+    ///
+    /// let pct = Percentage::from_points(25.0_f64);
+    /// assert_eq!(pct.complement(), Some(Percentage::from_points(75.0)));
+    /// ```
     pub fn complement_unchecked(self) -> Self {
         Self::from_points(T::one_hundred() - self.to_points())
     }
 
     /// Linear interpolation from `a` at 0% to `b` at 100%. Extrapolates outside
     /// the 0-100% range.
+    ///
+    /// ```
+    /// use percentum::Percentage;
+    ///
+    /// let pct = Percentage::from_points(25.0_f64);
+    /// assert_eq!(pct.lerp(20.0, 80.0), 35.0);
+    /// ```
     pub fn lerp(self, a: T, b: T) -> T {
         a + self.to_fraction() * (b - a)
     }
 
     /// Clamp this percentage to the range `[min, max]`.
+    ///
+    /// If the percentage is less than `min`, returns `min`.
+    /// If greater than `max`, returns `max`.
+    /// Otherwise returns `self`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use percentum::Percentage;
+    ///
+    /// let lo = Percentage::from_points(0.0_f64);
+    /// let hi = Percentage::from_points(100.0_f64);
+    ///
+    /// let pct = Percentage::from_points(150.0_f64);
+    /// assert_eq!(pct.clamp(lo, hi), hi);
+    ///
+    /// let pct = Percentage::from_points(-10.0_f64);
+    /// assert_eq!(pct.clamp(lo, hi), lo);
+    ///
+    /// let pct = Percentage::from_points(50.0_f64);
+    /// assert_eq!(pct.clamp(lo, hi), pct);
+    /// ```
     pub fn clamp(self, min: Self, max: Self) -> Self {
         if let Some(core::cmp::Ordering::Less) = self.partial_cmp(&min) {
             min
@@ -194,11 +368,35 @@ where
     }
 
     /// Return the smaller of `self` and `other`.
+    ///
+    /// If the two are equal, returns `self`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use percentum::Percentage;
+    ///
+    /// let a = Percentage::from_points(30.0_f64);
+    /// let b = Percentage::from_points(70.0_f64);
+    /// assert_eq!(a.min(b), a);
+    /// ```
     pub fn min(self, other: Self) -> Self {
         if other < self { other } else { self }
     }
 
     /// Return the larger of `self` and `other`.
+    ///
+    /// If the two are equal, returns `self`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use percentum::Percentage;
+    ///
+    /// let a = Percentage::from_points(30.0_f64);
+    /// let b = Percentage::from_points(70.0_f64);
+    /// assert_eq!(a.max(b), b);
+    /// ```
     pub fn max(self, other: Self) -> Self {
         if other > self { other } else { self }
     }
@@ -753,7 +951,7 @@ mod tests {
 
         for (pct, expected_points) in cases {
             let mut pct = pct;
-            let n = pct.to_points_mut();
+            let n = pct.as_points_mut();
             *n = n.round();
 
             assert_eq!(pct, Percentage::from_points(expected_points));
@@ -770,7 +968,7 @@ mod tests {
 
         for (pct, expected_points) in cases {
             let mut pct = pct;
-            let n = pct.to_fraction_mut();
+            let n = pct.as_fraction_mut();
             *n = n.round();
 
             assert_eq!(pct, Percentage::from_points(expected_points));
