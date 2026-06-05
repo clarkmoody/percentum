@@ -159,6 +159,17 @@ where
 
         (!denom.is_zero()).then(|| final_value / denom)
     }
+
+    /// Amount needed to sum to 100%, checked for range
+    pub fn complement(self) -> Option<Self> {
+        let p = self.to_points();
+        (p >= T::zero() && p <= T::one_hundred()).then(|| Self::from_points(T::one_hundred() - p))
+    }
+
+    /// Amount needed to sum to 100%, unchecked for range
+    pub fn complement_unchecked(self) -> Self {
+        Self::from_points(T::one_hundred() - self.to_points())
+    }
 }
 
 impl<T> Default for Percentage<T>
@@ -839,6 +850,41 @@ mod tests {
 
         // Unsolvable
         assert!(Percentage::from_points(-100.0).solve_initial(1.0).is_none())
+    }
+
+    #[test]
+    fn complement() {
+        let cases = [
+            (-1.0, None),
+            (0.0, Some(100.0)),
+            (25.0, Some(75.0)),
+            (100.0, Some(0.0)),
+            (101.0, None),
+        ];
+
+        for (points, complement) in cases {
+            let pct = Percentage::from_points(points);
+            assert_eq!(pct.complement(), complement.map(Percentage::from_points));
+        }
+    }
+
+    #[test]
+    fn complement_unchecked() {
+        let cases = [
+            (-1.0, 101.0),
+            (0.0, 100.0),
+            (25.0, 75.0),
+            (100.0, 0.0),
+            (101.0, -1.0),
+        ];
+
+        for (points, complement) in cases {
+            let pct = Percentage::from_points(points);
+            assert_eq!(
+                pct.complement_unchecked(),
+                Percentage::from_points(complement)
+            );
+        }
     }
 
     #[test]
