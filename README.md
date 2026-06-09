@@ -13,6 +13,7 @@ assert_eq!(p, q);
 
 ## Feature Flags
 
+- `bincode`: Implements `Encode` and `Decode`
 - `decimal`: Implementation for `rust_decimal::Decimal`
 - `serde`: Modules for serde operations on percentage points or fractions
 
@@ -26,3 +27,17 @@ struct Data {
 let d = serde_json::from_str(r#"{ "rate": 0.55 }"#).unwrap();
 assert_eq!(d.rate, Percentage::from_points(55.0));
 ```
+
+## Supported Number Types
+
+The `Number` trait is implemented for:
+
+| Type                    | Feature Flag         |
+| ----------------------- | -------------------- |
+| `f32`                   | _(always available)_ |
+| `f64`                   | _(always available)_ |
+| `rust_decimal::Decimal` | `decimal`            |
+
+## License
+
+MIT
