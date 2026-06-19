@@ -6,6 +6,7 @@ edition = "2024"
 description = "Percentage type sanity"
 license = "MIT"
 repository = "https://github.com/clarkmoody/percentum"
+include = ["src/", "LICENSE"]
 
 [features]
 default = []
